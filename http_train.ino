@@ -5,7 +5,7 @@
 #include <WiFiManager.h>
 #include <ESP8266mDNS.h>
 
-const int timeout = 1000;
+const int timeout = 1000; //max time before emergency break
 
 uint8_t direction = _CW;
 int speed = 0;
@@ -18,7 +18,7 @@ WiFiManager wifiManager;
 
 void handleRoot() {
 	server.send(200, "text/html", "okay"); //the http payload isn't important
-  if (server.hasArg("d")){
+  if (server.hasArg("d")){ //use d get argument for direction: 1 or 0
     int d = server.arg("d").toInt();
     if(d==1){
       direction = _CCW;
@@ -28,7 +28,7 @@ void handleRoot() {
       Serial.print("_CW  ");
     }
   }
-  if (server.hasArg("s")){
+  if (server.hasArg("s")){ //use s get argument for speed: 0-100
     int s = server.arg("s").toInt();
     if(s >= 0 && s <= 100){
       speed = s;
@@ -55,13 +55,13 @@ void setup() {
 	server.on("/", handleRoot);
 	server.begin();
 	Serial.println("HTTP server started");
-  MDNS.addService("esp", "tcp", 80);
+  MDNS.addService("esp", "tcp", 80); //add mdms to be found by controller
   last_update = millis();
 }
 
 void loop() {
 	server.handleClient();
-  if(millis() - last_update > timeout){
+  if(millis() - last_update > timeout){ //check if we hit the timeout and should emrgency break
     Serial.println("timeout");
     speed = 0;
     M1.setmotor(_STOP);
