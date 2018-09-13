@@ -5,7 +5,7 @@
 #include <WiFiManager.h>
 #include <ESP8266mDNS.h>
 
-const int timeout = 0; //max time before emergency break
+const int timeout = 1000; //max time before emergency break; set to 0 to deactivate
 
 uint8_t direction = _CW;
 int speed = 0;
@@ -28,9 +28,10 @@ void handleRoot() {
       Serial.println("_CW  ");
     }
     server.send(200, "text/html", String(dir_text[direction]));
-  } else if (server.hasArg("s")){ //use s get argument for speed: 0-100
-    int s = server.arg("s").toInt();
-    speed += s;
+  }  
+  else if (server.hasArg("c")){ //use c get argument to change speed about given value: 0-100
+    int c = server.arg("c").toInt();
+    speed += c;
     if(speed > 100){
       speed = 100;
     }
@@ -41,12 +42,30 @@ void handleRoot() {
     last_update = millis();
     M1.setmotor(direction, speed);      
     server.send(200, "text/html", String(speed));
-  } else {
+  }  
+  else if (server.hasArg("s")){ //use s get argument for speed: 0-100
+    int s = server.arg("s").toInt();
+    speed = s;
+    if(speed > 100){
+      speed = 100;
+    }
+    else if(speed < 0){
+      speed = 0;
+    }
+    Serial.println(speed);
+    last_update = millis();
+    M1.setmotor(direction, speed);      
+    server.send(200, "text/html", String(speed));
+  }  
+  else if (server.hasArg("t")){ //use t get argument to reset the timeout
+    last_update = millis();
+    server.send(200, "text/html", String(speed));
+  }  
+  else {
 
     server.send(200, "text/html",
       "<html>\
         <head>\
-          "+ String(timeout==0?"":("<meta http-equiv='refresh' content='" + String(timeout/2000.0)+"'/>")) +"\
           <title>TRAIN (ESP8266)</title>\
           <style>\
             body { background-color: #000000; font-family: Arial, Helvetica, Sans-Serif; Color: #ffffff; text-align: center; user-select: none;}\
@@ -66,12 +85,12 @@ void handleRoot() {
             <a href=\"#ccw\" class=\"neut_Link\" data-command=\"d\" data-target=\"/?d=1\">CCW</a>\
             <a href=\"#cw\" class=\"neut_Link\" data-command=\"d\" data-target=\"/?d=0\">CW</a>\
             </br></br>\
-            <a href=\"#off\" class=\"off_Link\" data-command=\"s\" data-target=\"/?s=-100\">off</a>\
-            <a href=\"#dm\" class=\"off_Link\" data-command=\"s\" data-target=\"/?s=-10\">--</a>\
-            <a href=\"#m\" class=\"off_Link\" data-command=\"s\" data-target=\"/?s=-1\">-</a>\
-            <a href=\"#p\" class=\"on_Link\" data-command=\"s\" data-target=\"/?s=+1\">+</a>\
-            <a href=\"#dp\" class=\"on_Link\" data-command=\"s\" data-target=\"/?s=+10\">++</a>\
-            <a href=\"#max\" class=\"on_Link\" data-command=\"s\" data-target=\"/?s=+100\">full</a>\
+            <a href=\"#off\" class=\"off_Link\" data-command=\"s\" data-target=\"/?c=-100\">off</a>\
+            <a href=\"#dm\" class=\"off_Link\" data-command=\"s\" data-target=\"/?c=-10\">--</a>\
+            <a href=\"#m\" class=\"off_Link\" data-command=\"s\" data-target=\"/?c=-1\">-</a>\
+            <a href=\"#p\" class=\"on_Link\" data-command=\"s\" data-target=\"/?c=+1\">+</a>\
+            <a href=\"#dp\" class=\"on_Link\" data-command=\"s\" data-target=\"/?c=+10\">++</a>\
+            <a href=\"#max\" class=\"on_Link\" data-command=\"s\" data-target=\"/?c=+100\">full</a>\
           </p>\
           <script type=\"text/javascript\">\
             window.onload = function() {\
@@ -97,6 +116,12 @@ void handleRoot() {
                   }\
                 });\
               }\
+              "+ String(timeout==0?"":("\
+                setInterval(function(){\
+                  let request = new XMLHttpRequest();\
+                  request.open(\"GET\", \"/?t=1\");\
+                  request.send();\
+                }," + String(timeout/2.5))) +")\
             }\
           </script>\
         </body>\
