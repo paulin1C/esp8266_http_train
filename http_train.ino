@@ -150,9 +150,9 @@ void handleRoot() {
                 links[index].addEventListener(\"click\", (event) => {\
                   if(event.target != null) {\
                     let command = event.target.dataset.command;\
-                    if(command = \"s\"){\
+                    if(command == \"s\"){\
                       sendrequest(event.target.dataset.target, 1);\
-                    } else if (command = \"d\"){\
+                    } else if (command == \"d\"){\
                       sendrequest(event.target.dataset.target, 2);\
                     }\
                   }\
