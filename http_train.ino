@@ -27,7 +27,7 @@ void handleRoot() {
       direction = _CW;
       Serial.println("_CW  ");
     }
-    server.send(200, "text/html", String(dir_text[direction]));
+    response();
   }  
   else if (server.hasArg("c")){ //use c get argument to change speed about given value: 0-100
     int c = server.arg("c").toInt();
@@ -41,7 +41,7 @@ void handleRoot() {
     Serial.println(speed);
     last_update = millis();
     M1.setmotor(direction, speed);      
-    server.send(200, "text/html", String(speed));
+    response();
   }  
   else if (server.hasArg("s")){ //use s get argument for speed: 0-100
     int s = server.arg("s").toInt();
@@ -55,11 +55,11 @@ void handleRoot() {
     Serial.println(speed);
     last_update = millis();
     M1.setmotor(direction, speed);      
-    server.send(200, "text/html", String(speed));
+    response();
   }  
   else if (server.hasArg("t")){ //use t get argument to reset the timeout
     last_update = millis();
-    server.send(200, "text/html", String(speed));
+    response();
   }  
   else {
 
@@ -115,22 +115,9 @@ void handleRoot() {
             }\
           </script>\
           <script type=\"text/javascript\">\
-            let request = new XMLHttpRequest();\
+            var request = new XMLHttpRequest();\
             function sendrequest(value, whichvalue){\
               console.log(value);\
-              request.addEventListener('load', function(event) {\
-                if (request.status >= 200 && request.status < 300) {\
-                  if (whichvalue == 0 || whichvalue == 1){\
-                    response = request.responseText;\
-                    document.getElementById(\"speed\").innerHTML = response;\
-                    slider.value = response;\
-                  } else if (whichvalue == 2){\
-                    document.getElementById(\"direction\").innerHTML = request.responseText;\
-                  }\
-                } else {\
-                  console.warn(request.statusText, request.responseText);\
-                }\
-              });\
               switch(whichvalue){\
                 case 0:\
                   request.open(\"GET\", \"/?s=\"+String(value));\
@@ -145,6 +132,28 @@ void handleRoot() {
               request.send();\
             }\
             window.onload = function() {\
+              request.addEventListener('load', function(event) {\
+                if (request.status >= 200 && request.status < 300) {\
+                  response = request.responseText;\
+                  let segment = 0;\
+                  let rspeed = \"\";\
+                  let rdir = \"\";\
+                  for (i in response){\
+                    if (response[i] == \"|\"){\
+                      segment ++;\
+                    }\
+                    else if(segment == 0){\
+                      rspeed += response[i];\
+                    }\
+                    else if(segment == 1){\
+                      rdir += response[i];\
+                    }\
+                  }\
+                  document.getElementById(\"speed\").innerHTML = rspeed;\
+                  document.getElementById(\"direction\").innerHTML = rdir;\
+                  slider.value = rspeed;\
+                }\
+              });\
               let links = document.getElementsByTagName(\"a\");\
               for(let index = 0; index < links.length; index++) {\
                 links[index].addEventListener(\"click\", (event) => {\
@@ -170,6 +179,10 @@ void handleRoot() {
       </html>");
 
   }
+}
+
+void response(){
+  server.send(200, "text/html", String(speed)+ "|" + String(dir_text[direction]));
 }
 
 void setup() {
