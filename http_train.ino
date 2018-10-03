@@ -5,7 +5,7 @@
 #include <WiFiManager.h>
 #include <ESP8266mDNS.h>
 
-const int timeout = 1000; //max time before emergency break; set to 0 to deactivate
+const int timeout = 2000; //max time before emergency break; set to 0 to deactivate
 
 uint8_t direction = _CW;
 int speed = 0;
@@ -27,6 +27,9 @@ void handleRoot() {
       direction = _CW;
       Serial.println("_CW  ");
     }
+    M1.setmotor(direction, speed);
+    
+    last_update = millis();
     response();
   }  
   else if (server.hasArg("c")){ //use c get argument to change speed about given value: 0-100
@@ -40,7 +43,9 @@ void handleRoot() {
     }
     Serial.println(speed);
     last_update = millis();
-    M1.setmotor(direction, speed);      
+    M1.setmotor(direction, speed);
+    
+    last_update = millis();
     response();
   }  
   else if (server.hasArg("s")){ //use s get argument for speed: 0-100
@@ -54,7 +59,9 @@ void handleRoot() {
     }
     Serial.println(speed);
     last_update = millis();
-    M1.setmotor(direction, speed);      
+    M1.setmotor(direction, speed);
+    
+    last_update = millis();
     response();
   }  
   else if (server.hasArg("t")){ //use t get argument to reset the timeout
