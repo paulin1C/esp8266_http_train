@@ -1,0 +1,71 @@
+#include <ESP8266WiFi.h>          //https://github.com/esp8266/Arduino
+
+//needed for library
+#include <DNSServer.h>
+#include <ESP8266WebServer.h>
+#include <WiFiManager.h>         //https://github.com/tzapu/WiFiManager
+
+#include <WiFiUdp.h>
+WiFiUDP Udp;
+int sensorPin = A0;    // select the input pin for the potentiometer
+int sensorValue = 0;
+int oldSensorValue = 0;
+int dir = 0;
+String dirText[2] = {"CCW", "CW"};
+long lastupdate = millis();
+int timeout = 2000;
+
+void setup() {
+    pinMode(LED_BUILTIN, OUTPUT);
+    // put your setup code here, to run once:
+    Serial.begin(115200);
+    WiFiManager wifiManager;
+    wifiManager.autoConnect("AutoConnectAP");
+    Serial.println("connected...yeey :)");
+    Udp.begin(1202);
+}
+
+void loop() {
+  sensorValue = analogRead(sensorPin);
+  if(sensorValue <= 448){
+    dir = 0;
+    sensorValue = (448-sensorValue)/4.16;
+  } else if(sensorValue >= 575){
+    dir = 1;
+    sensorValue = (sensorValue-575)/4.16;
+  } else{
+    sensorValue = 0;
+  }
+  
+  if (sensorValue > 100){
+    sensorValue = 100;
+  } else if (sensorValue < 0){
+    sensorValue = 0;
+  }
+  
+      
+  if(sensorValue - oldSensorValue <= -1 || sensorValue - oldSensorValue > 2 || lastupdate + 400 < millis()){
+    
+    byte message[2];
+    message[ 0] = sensorValue;  message[ 1] = dir;
+    Udp.beginPacket(0x31002A0A, 8888);
+    Udp.write(message,sizeof(message));
+    Udp.endPacket();
+    
+    oldSensorValue = sensorValue;
+    lastupdate = millis();
+    
+    for(int i = 0; i < 50 + sensorValue/2 - dir*sensorValue; i++){
+      Serial.print(" ");
+    }
+    //Serial.println("\n send");
+    Serial.println(String(sensorValue) + " | " + dirText[dir]);
+    //Serial.println("O");
+  }
+  if(sensorValue == 0){
+    digitalWrite(LED_BUILTIN, LOW);
+  }else{
+    digitalWrite(LED_BUILTIN, HIGH);
+  }
+  delay(5);
+}
